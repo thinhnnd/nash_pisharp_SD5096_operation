@@ -12,16 +12,7 @@ frontend:
   enabled: true
   replicaCount: 1
   image:
-    tag: "latest"  # Latest available version
-  env:
-    - name: GENERATE_SOURCEMAP
-      value: "false"
-    - name: CI
-      value: "true"
-    - name: SKIP_PREFLIGHT_CHECK
-      value: "true"
-    - name: DISABLE_ESLINT_PLUGIN
-      value: "true"
+    tag: "v1.0.27"  # Latest available version
   volumeMounts:
     - name: cache-volume
       mountPath: /usr/src/app/node_modules/.cache
