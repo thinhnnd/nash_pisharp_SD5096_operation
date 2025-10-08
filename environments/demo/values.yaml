@@ -70,8 +70,7 @@ ingress:
   className: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: "letsencrypt-staging"
-    nginx.ingress.kubernetes.io/default-backend: "frontend"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
   hosts:
     - host: demo.nash-pisharp.example.com
       paths:
@@ -89,8 +88,7 @@ ingress:
               name: backend
               port:
                 number: 3000
-    - host: "*.nip.io"
-      paths:
+    - paths:
         - path: /
           pathType: Prefix
           backend:
@@ -105,7 +103,3 @@ ingress:
               name: backend
               port:
                 number: 3000
-  tls:
-    - hosts:
-        - demo.nash-pisharp.example.com
-      secretName: nash-pisharp-demo-tls
