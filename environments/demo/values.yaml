@@ -12,20 +12,14 @@ frontend:
   enabled: true
   replicaCount: 1
   image:
-    tag: "v1.0.27"  # Latest available version
-  volumeMounts:
-    - name: cache-volume
-      mountPath: /usr/src/app/node_modules/.cache
-  volumes:
-    - name: cache-volume
-      emptyDir: {}
+    tag: "latest"  # Latest stable from main branch
   resources:
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 250m
+      memory: 256Mi
     requests:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 100m
+      memory: 128Mi
   autoscaling:
     enabled: false
 
@@ -77,8 +71,25 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/default-backend: "frontend"
   hosts:
     - host: demo.nash-pisharp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port:
+                number: 3000
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: backend
+              port:
+                number: 3000
+    - host: "*.nip.io"
       paths:
         - path: /
           pathType: Prefix
