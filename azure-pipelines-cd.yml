@@ -39,6 +39,14 @@ stages:
     - checkout: self
       displayName: 'Checkout operation repository'
     
+    # Set Kubernetes context (optional - if using specific service connection)
+    - task: Kubernetes@1
+      displayName: 'Set Kubernetes Context'
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'aksPisharpDemo'  # Your AKS service connection name
+        command: 'login'
+    
     # Verify kubectl connectivity
     - task: PowerShell@2
       displayName: 'Verify Kubernetes Connectivity'
