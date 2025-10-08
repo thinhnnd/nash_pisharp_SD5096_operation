@@ -16,10 +16,10 @@ frontend:
   resources:
     limits:
       cpu: 250m
-      memory: 256Mi
+      memory: 768Mi  # Tăng lên 768Mi để tránh OOMKilled
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi  # Tăng từ 128Mi lên 256Mi
   autoscaling:
     enabled: false
 
