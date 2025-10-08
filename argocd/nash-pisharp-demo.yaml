@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/thinhnnd/nash-pisharp-gitops.git  # Update with your GitOps repo URL
+    repoURL: https://github.com/thinhnnd/nash_pisharp_SD5096_operation.git  # Update with your GitOps repo URL
     targetRevision: HEAD
     path: charts/nash-pisharp-app
     helm:

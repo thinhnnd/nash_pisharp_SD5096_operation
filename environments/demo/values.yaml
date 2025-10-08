@@ -74,10 +74,18 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
-          service: frontend
+          backend:
+            service:
+              name: frontend
+              port:
+                number: 3000
         - path: /api
           pathType: Prefix
-          service: backend
+          backend:
+            service:
+              name: backend
+              port:
+                number: 3000
   tls:
     - hosts:
         - demo.nash-pisharp.example.com
