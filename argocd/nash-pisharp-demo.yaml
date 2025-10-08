@@ -19,7 +19,7 @@ spec:
         - ../../environments/demo/values.yaml
       parameters:
         - name: frontend.image.tag
-          value: "latest"  # Uses latest stable version from main branch
+          value: "v1.0.40"  # Uses latest stable version from main branch
         - name: backend.image.tag
           value: "latest"   # Uses latest stable version from main branch
   destination:
