@@ -35,7 +35,9 @@ backend:
     - name: PORT
       value: "3000"
     - name: MONGO_URL
-      value: "mongodb://nash-pisharp-mongodb:27017/nashpisharp_demo"
+      value: "mongodb://nash-pisharp-demo-nash-pisharp-app-mongodb:27017/nashpisharp_demo"
+    - name: MONGODB_URI
+      value: "mongodb://nash-pisharp-demo-nash-pisharp-app-mongodb:27017/nashpisharp_demo"
   resources:
     limits:
       cpu: 250m
