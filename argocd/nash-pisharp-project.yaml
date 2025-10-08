@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: nash-pisharp
+  namespace: argocd
+spec:
+  description: Nash PiSharp application project
+  sourceRepos:
+    - 'https://github.com/thinhnnd/nash-pisharp-gitops.git'
+  destinations:
+    - namespace: 'nash-pisharp-*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'networking.k8s.io'
+      kind: Ingress
+    - group: 'cert-manager.io'
+      kind: Certificate
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: 'apps'
+      kind: Deployment
+    - group: 'apps'
+      kind: StatefulSet
+    - group: 'autoscaling'
+      kind: HorizontalPodAutoscaler
+  roles:
+    - name: admin
+      description: Admin access to Nash PiSharp applications
+      policies:
+        - p, proj:nash-pisharp:admin, applications, *, nash-pisharp/*, allow
+        - p, proj:nash-pisharp:admin, repositories, *, *, allow
+      groups:
+        - nash-pisharp:admin
+    - name: developer
+      description: Developer access to Nash PiSharp applications
+      policies:
+        - p, proj:nash-pisharp:developer, applications, get, nash-pisharp/*, allow
+        - p, proj:nash-pisharp:developer, applications, sync, nash-pisharp/nash-pisharp-dev, allow
+        - p, proj:nash-pisharp:developer, applications, sync, nash-pisharp/nash-pisharp-staging, allow
+      groups:
+        - nash-pisharp:developer

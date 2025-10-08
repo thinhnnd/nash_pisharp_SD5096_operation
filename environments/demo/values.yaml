@@ -1,0 +1,84 @@
+# Demo environment values for GitOps
+# Uses latest stable images from main branch
+
+replicaCount: 1
+
+image:
+  registry: acrnashpisharp.azurecr.io
+  pullPolicy: IfNotPresent
+
+# Frontend configuration for Demo
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    tag: "latest"  # Latest stable from main branch
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+
+# Backend configuration for Demo
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    tag: "latest"  # Latest stable from main branch
+  env:
+    - name: NODE_ENV
+      value: "demo"
+    - name: PORT
+      value: "3000"
+    - name: MONGO_URL
+      value: "mongodb://nash-pisharp-mongodb:27017/nashpisharp_demo"
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+
+# MongoDB configuration for Demo
+mongodb:
+  enabled: true
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: "default"
+
+# Ingress configuration for Demo
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  hosts:
+    - host: demo.nash-pisharp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+  tls:
+    - hosts:
+        - demo.nash-pisharp.example.com
+      secretName: nash-pisharp-demo-tls

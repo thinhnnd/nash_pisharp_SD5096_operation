@@ -1,0 +1,106 @@
+# Production environment values for GitOps
+# Inherits from base values.yaml and overrides for production environment
+
+replicaCount: 3
+
+image:
+  registry: acrnashpisharp.azurecr.io
+  pullPolicy: IfNotPresent
+
+# Frontend configuration for Production
+frontend:
+  enabled: true
+  replicaCount: 3
+  image:
+    tag: "prod-${BUILD_NUMBER}"  # Will be replaced by CI/CD
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+
+# Backend configuration for Production
+backend:
+  enabled: true
+  replicaCount: 3
+  image:
+    tag: "prod-${BUILD_NUMBER}"  # Will be replaced by CI/CD
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: PORT
+      value: "3000"
+    - name: MONGO_URL
+      valueFrom:
+        secretKeyRef:
+          name: mongodb-credentials
+          key: connection-string
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+
+# MongoDB configuration for Production
+mongodb:
+  enabled: false  # Use external managed MongoDB in production
+  external:
+    enabled: true
+    host: "prod-mongodb.cosmos.azure.com"
+    port: 10255
+    database: "nashpisharp"
+    ssl: true
+
+# Ingress configuration for Production
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: nash-pisharp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+  tls:
+    - hosts:
+        - nash-pisharp.example.com
+      secretName: nash-pisharp-prod-tls
+
+# Security and monitoring
+podSecurityPolicy:
+  enabled: true
+
+networkPolicy:
+  enabled: true
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  grafana:
+    enabled: true

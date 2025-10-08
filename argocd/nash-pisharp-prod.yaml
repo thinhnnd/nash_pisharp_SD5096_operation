@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nash-pisharp-prod
+  namespace: argocd
+  labels:
+    app: nash-pisharp
+    environment: prod
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thinhnnd/nash-pisharp-gitops.git  # Update with your GitOps repo URL
+    targetRevision: HEAD
+    path: charts/nash-pisharp-app
+    helm:
+      valueFiles:
+        - ../../environments/prod/values.yaml
+      parameters:
+        - name: frontend.image.tag
+          value: "prod-latest"  # Updated via GitOps workflow - CI pushes to GitOps repo
+        - name: backend.image.tag
+          value: "prod-latest"   # Updated via GitOps workflow - CI pushes to GitOps repo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nash-pisharp-prod
+  syncPolicy:
+    # Production requires manual sync for safety
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  revisionHistoryLimit: 20

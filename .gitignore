@@ -1,0 +1,42 @@
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# ArgoCD local files
+argocd-local/
+
+# Kubernetes secrets (should never be committed)
+*-secret.yaml
+*-secrets.yaml

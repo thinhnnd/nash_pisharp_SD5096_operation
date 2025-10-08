@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: nash-pisharp-apps
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - env: dev
+        namespace: nash-pisharp-dev
+        autoSync: true
+        autoPrune: true
+        selfHeal: true
+        imageTag: "dev-latest"
+      - env: demo
+        namespace: nash-pisharp-demo
+        autoSync: true
+        autoPrune: true
+        selfHeal: true
+        imageTag: "latest"
+      - env: prod
+        namespace: nash-pisharp-prod
+        autoSync: false
+        autoPrune: false
+        selfHeal: false
+        imageTag: "v1.0.1"
+  template:
+    metadata:
+      name: 'nash-pisharp-{{env}}'
+      labels:
+        app: nash-pisharp
+        environment: '{{env}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: nash-pisharp
+      source:
+        repoURL: https://github.com/thinhnnd/nash-pisharp-gitops.git
+        targetRevision: HEAD
+        path: charts/nash-pisharp-app
+        helm:
+          valueFiles:
+            - '../../environments/{{env}}/values.yaml'
+          parameters:
+            - name: frontend.image.tag
+              value: '{{imageTag}}'  # dev-latest for dev, latest for demo, specific version for prod
+            - name: backend.image.tag
+              value: '{{imageTag}}'   # dev-latest for dev, latest for demo, specific version for prod
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: '{{autoPrune}}'
+          selfHeal: '{{selfHeal}}'
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      revisionHistoryLimit: 10
