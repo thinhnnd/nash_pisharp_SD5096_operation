@@ -110,6 +110,72 @@ Update ArgoCD application manifests to reflect new tagging strategy if needed.
 - Verify images are pushed to ACR
 - Monitor ArgoCD for deployment updates
 
+## Continuous Deployment (CD) Pipeline
+
+### Overview
+
+The CD pipeline (`azure-pipelines-cd.yml`) is located directly in this operation repository and automatically deploys applications when configurations are updated.
+
+### CD Pipeline Features
+
+- **Location**: Root of operation repository (`azure-pipelines-cd.yml`)
+- **Trigger**: Monitors changes in this repository:
+  - `environments/*/values.yaml` (environment configurations)
+  - `argocd/*.yaml` (ArgoCD application definitions)
+- **Deployment**: Uses kubectl to apply ArgoCD applications
+- **Environments**: Deploys to Demo (always) and Dev (conditional)
+- **Verification**: Checks deployment status and pod health
+
+### Setup CD Pipeline
+
+1. **Create Pipeline in Azure DevOps**:
+   - Name: `CD-Deploy-Pipeline`
+   - Repository: **This operation repository**
+   - YAML file: `azure-pipelines-cd.yml` (in root)
+
+2. **Configure Service Connections**:
+   - Kubernetes service connection for AKS cluster
+   - No GitHub connection needed (pipeline in same repo)
+
+3. **Required Variables**:
+   - Update agent pool and agent name as needed
+   - `argoCDServerUrl`: Your ArgoCD server URL (if using ArgoCD CLI)
+
+### Workflow
+
+1. **Ops Team** updates version in this repo (`environments/demo/values.yaml`)
+2. **CD Pipeline** automatically triggers (same repository)
+3. **Pipeline** applies updated ArgoCD applications
+4. **ArgoCD** syncs and deploys new versions to Kubernetes
+5. **Verification** checks deployment health
+
+### File Structure
+
+```
+nash_pisharp_SD5096_operation/
+├── azure-pipelines-cd.yml     # CD Pipeline (NEW)
+├── CD-SETUP-GUIDE.md          # Detailed setup guide
+├── environments/               # Trigger CD when changed
+│   ├── demo/values.yaml
+│   ├── dev/values.yaml
+│   └── prod/values.yaml
+├── argocd/                    # ArgoCD applications
+│   ├── nash-pisharp-demo.yaml
+│   ├── nash-pisharp-dev.yaml
+│   └── nash-pisharp-prod.yaml
+└── scripts/                   # Manual deployment scripts
+    ├── update-image-tags.ps1
+    └── update-image-tags.sh
+```
+
+### Manual Deployment Alternative
+
+If CD pipeline is not desired, use the existing PowerShell scripts:
+```powershell
+# Update image tags manually
+.\scripts\update-image-tags.ps1 -Environment demo -FrontendTag "v1.0.123" -BackendTag "v1.0.456"
+```
+
 ## Benefits of This Approach
 
 1. **Decentralized**: Each team owns their pipeline
@@ -117,3 +183,5 @@ Update ArgoCD application manifests to reflect new tagging strategy if needed.
 3. **Simplified Dependencies**: No external pipeline repository needed
 4. **Faster Iterations**: Changes to pipeline don't require separate repository
 5. **Better Governance**: Pipeline rules applied per repository
+6. **Automated Deployment**: CD pipeline eliminates manual deployment steps
+7. **Self-Contained**: Operations team manages both configs and deployment pipeline

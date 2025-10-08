@@ -1,0 +1,158 @@
+# Azure DevOps CD Pipeline for Deployment
+# Triggers when operation repo changes (version updates by Ops team)
+
+name: CD-Deploy-$(Date:yyyyMMdd)-$(Rev:r)
+
+# Trigger when this repository (operation repo) changes
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - environments/*/values.yaml
+    - argocd/*.yaml
+    exclude:
+    - README.md
+    - docs/*
+    - '*.md'
+
+variables:
+  # Kubernetes configuration
+  argoCDNamespace: 'argocd'
+  
+  # Build configuration
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy Applications'
+  jobs:
+  - job: DeployToEnvironments
+    displayName: 'Deploy to Kubernetes via ArgoCD'
+    pool:
+      name: 'Default'  # Use Default agent pool
+      demands:
+      - agent.name -equals THINHPC  # Optional: specify exact agent
+    steps:
+    # Checkout this repository (operation repo)
+    - checkout: self
+      displayName: 'Checkout operation repository'
+    
+    # Verify kubectl connectivity
+    - task: PowerShell@2
+      displayName: 'Verify Kubernetes Connectivity'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "🔍 Verifying Kubernetes connectivity..." -ForegroundColor Blue
+          
+          try {
+            # Test cluster connectivity
+            kubectl cluster-info --request-timeout=30s
+            
+            # Check ArgoCD namespace
+            kubectl get ns argocd
+            
+            # Check if ArgoCD is running
+            kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server
+            
+            Write-Host "✅ Kubernetes connectivity verified!" -ForegroundColor Green
+          }
+          catch {
+            Write-Error "❌ Kubernetes connectivity failed: $_"
+            Write-Host "Please ensure:"
+            Write-Host "1. Kubernetes service connection is properly configured"
+            Write-Host "2. AKS cluster is accessible"
+            Write-Host "3. ArgoCD is installed in 'argocd' namespace"
+            exit 1
+          }
+
+    # Deploy to Demo environment
+    - task: PowerShell@2
+      displayName: 'Deploy to Demo Environment'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "🚀 Starting deployment to Demo environment..." -ForegroundColor Green
+          
+          try {
+            # Apply demo application
+            kubectl apply -f "$(Build.SourcesDirectory)/argocd/nash-pisharp-demo.yaml"
+            
+            # Wait for application to be ready
+            Write-Host "Waiting for demo application to sync..." -ForegroundColor Blue
+            kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=nash-pisharp-app -n nash-pisharp-demo --timeout=300s
+            
+            Write-Host "✅ Demo deployment completed successfully!" -ForegroundColor Green
+          }
+          catch {
+            Write-Error "❌ Demo deployment failed: $_"
+            exit 1
+          }
+
+    # Deploy to Dev environment (if values changed)
+    - task: PowerShell@2
+      displayName: 'Deploy to Dev Environment'
+      condition: contains(variables['Build.SourceVersionMessage'], 'dev')
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "🚀 Starting deployment to Dev environment..." -ForegroundColor Green
+          
+          try {
+            # Apply dev application
+            kubectl apply -f "$(Build.SourcesDirectory)/argocd/nash-pisharp-dev.yaml"
+            
+            # Wait for application to be ready
+            Write-Host "Waiting for dev application to sync..." -ForegroundColor Blue
+            kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=nash-pisharp-app -n nash-pisharp-dev --timeout=300s
+            
+            Write-Host "✅ Dev deployment completed successfully!" -ForegroundColor Green
+          }
+          catch {
+            Write-Error "❌ Dev deployment failed: $_"
+            exit 1
+          }
+
+    # Verify deployment status
+    - task: PowerShell@2
+      displayName: 'Verify Deployment Status'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "🔍 Verifying deployment status..." -ForegroundColor Blue
+          
+          # Check demo environment
+          Write-Host "Demo Environment Status:" -ForegroundColor Yellow
+          kubectl get pods -n nash-pisharp-demo -l app.kubernetes.io/name=nash-pisharp-app
+          kubectl get svc -n nash-pisharp-demo
+          
+          # Check if dev environment exists
+          $devNamespace = kubectl get namespace nash-pisharp-dev --ignore-not-found=true
+          if ($devNamespace) {
+            Write-Host "Dev Environment Status:" -ForegroundColor Yellow
+            kubectl get pods -n nash-pisharp-dev -l app.kubernetes.io/name=nash-pisharp-app
+            kubectl get svc -n nash-pisharp-dev
+          }
+          
+          Write-Host "🎉 Deployment verification completed!" -ForegroundColor Green
+
+    # Deployment summary
+    - script: |
+        echo "📋 DEPLOYMENT SUMMARY"
+        echo "===================="
+        echo "✅ CD Pipeline executed successfully"
+        echo "🎯 Triggered by: Operation repo changes"
+        echo "🌿 Branch: $(Build.SourceBranchName)"
+        echo "📝 Commit: $(Build.SourceVersionMessage)"
+        echo "🕒 Timestamp: $(date)"
+        echo ""
+        echo "🚀 Applications deployed:"
+        echo "   - nash-pisharp-demo (always deployed)"
+        if [[ "$(Build.SourceVersionMessage)" == *"dev"* ]]; then
+          echo "   - nash-pisharp-dev (conditional)"
+        fi
+        echo ""
+        echo "🔗 Access applications via LoadBalancer services"
+      displayName: 'Deployment Summary'
